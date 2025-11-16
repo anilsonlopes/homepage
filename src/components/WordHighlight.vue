@@ -12,11 +12,11 @@ import { defineProps } from 'vue';
 defineProps({
   target: {
     type: String,
-    required: true
+    default: ''
   },
   reveal: {
     type: String,
-    required: true
+    default: ''
   }
 });
 </script>
