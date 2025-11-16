@@ -27,11 +27,11 @@ import WordHighlight from './components/WordHighlight.vue';
     </p>
 
     <ul class="font-mono flex space-x-5 items-center justify-center text-xs mx-auto mt-10">
-      <span><word-highlight target="Maceió" reveal="Cidade natal do quila"></word-highlight>, BRA</span>
-      <span>꠵</span>
-      <span>Agosto 21, 1992</span>
-      <span>꠵</span>
-      <span>nissobmx@gmail.com</span>
+      <li><word-highlight target="Maceió" reveal="Cidade natal do quila"></word-highlight>, BRA</li>
+      <li>꠵</li>
+      <li>Agosto 21, 1992</li>
+      <li>꠵</li>
+      <li>nissobmx@gmail.com</li>
     </ul>
   </main>
 </template>
