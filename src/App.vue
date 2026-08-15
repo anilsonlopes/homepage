@@ -1,5 +1,5 @@
 <script setup>
-import { onBeforeUnmount, onMounted } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import WordHighlight from './components/WordHighlight.vue';
 
 const socialLinks = [
@@ -11,12 +11,134 @@ const socialLinks = [
   { name: 'E-mail', handle: 'nissobmx@gmail.com', href: 'mailto:nissobmx@gmail.com' }
 ];
 
+const experiments = [
+  {
+    number: '01',
+    title: 'yTv',
+    description: 'Simulador de programação de TV com vídeos do YouTube, grade predefinida, reprodução sincronizada e comerciais autorais.',
+    tags: ['Nuxt', 'Vue', 'TypeScript'],
+    href: 'https://ytv.quila.dev',
+    repository: 'https://github.com/anilsonlopes/ytv',
+    status: 'no ar',
+    color: '#c63228',
+    pattern: 'diagonal'
+  },
+  {
+    number: '02',
+    title: 'Ranking',
+    description: 'Ferramenta para criar e compartilhar páginas com listas visuais que simulam rankings.',
+    tags: ['Nuxt', 'Vue', 'Tailwind'],
+    href: 'https://ranking.quila.dev',
+    repository: 'https://github.com/anilsonlopes/ranking',
+    status: 'no ar',
+    color: '#d76b00',
+    pattern: 'grid'
+  },
+  {
+    number: '03',
+    title: 'Toggle',
+    description: 'Aplicativo minimalista para comunicar, sem distrações, se você está disponível ou ocupado.',
+    tags: ['Nuxt', 'PWA', 'Nuxt Content'],
+    href: 'https://toggle.quila.dev',
+    repository: 'https://github.com/anilsonlopes/toggle',
+    status: 'no ar',
+    color: '#007a46',
+    pattern: 'checker'
+  },
+  {
+    number: '04',
+    title: 'Live',
+    description: 'Experiência focada para assistir ao canal Quila na Twitch, com abertura animada e player imersivo.',
+    tags: ['Nuxt 4', 'Vue', 'Twitch'],
+    href: 'https://live.quila.dev',
+    repository: 'https://github.com/anilsonlopes/live',
+    status: 'no ar',
+    color: '#7138a8',
+    pattern: 'cross'
+  },
+  {
+    number: '05',
+    title: 'Pseudo',
+    description: 'Protótipo visual de uma plataforma social com órbitas animadas e estrutura de rotas para conversas.',
+    tags: ['Nuxt', 'Vue', 'Motion'],
+    href: 'https://pseudo.quila.studio',
+    repository: 'https://github.com/anilsonlopes/pseudo',
+    status: 'protótipo',
+    color: '#1768c4',
+    pattern: 'dots'
+  },
+  {
+    number: '06',
+    title: 'Context Directory',
+    description: 'Base de conhecimento em português, estruturada em Markdown para consumo por agentes de IA.',
+    tags: ['Nuxt 4', 'Docus', 'Markdown'],
+    href: 'https://context-directory.labafero.com',
+    repository: 'https://github.com/anilsonlopes/context-directory',
+    status: 'no ar',
+    color: '#00777c',
+    pattern: 'horizontal'
+  }
+];
+
+const activeExperimentIndex = ref(0);
+const activeExperiment = computed(() => experiments[activeExperimentIndex.value]);
+const cursorElement = ref(null);
+
+function selectExperiment(index) {
+  activeExperimentIndex.value = index;
+}
+
+function navigateTabs(event) {
+  const keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+  if (!keys.includes(event.key)) return;
+
+  event.preventDefault();
+
+  if (event.key === 'Home') activeExperimentIndex.value = 0;
+  if (event.key === 'End') activeExperimentIndex.value = experiments.length - 1;
+  if (event.key === 'ArrowLeft') {
+    activeExperimentIndex.value = (activeExperimentIndex.value - 1 + experiments.length) % experiments.length;
+  }
+  if (event.key === 'ArrowRight') {
+    activeExperimentIndex.value = (activeExperimentIndex.value + 1) % experiments.length;
+  }
+
+  nextTick(() => document.getElementById(`experiment-tab-${activeExperimentIndex.value}`)?.focus());
+}
+
 let revealObserver;
+let removeCursorListeners;
 
 onMounted(() => {
   const revealElements = document.querySelectorAll('[data-reveal]');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+  if (window.matchMedia('(pointer: fine)').matches && cursorElement.value) {
+    const cursor = cursorElement.value;
+
+    const handlePointerMove = (event) => {
+      cursor.style.setProperty('--cursor-x', `${event.clientX}px`);
+      cursor.style.setProperty('--cursor-y', `${event.clientY}px`);
+      cursor.classList.add('is-visible');
+    };
+
+    const handlePointerLeave = () => cursor.classList.remove('is-visible');
+    const handlePointerEnter = () => cursor.classList.add('is-visible');
+
+    document.documentElement.classList.add('custom-cursor');
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
+    document.documentElement.addEventListener('mouseleave', handlePointerLeave);
+    document.documentElement.addEventListener('mouseenter', handlePointerEnter);
+
+    removeCursorListeners = () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      document.documentElement.removeEventListener('mouseleave', handlePointerLeave);
+      document.documentElement.removeEventListener('mouseenter', handlePointerEnter);
+      document.documentElement.classList.remove('custom-cursor');
+    };
+  }
+
+  if (reducedMotion || !('IntersectionObserver' in window)) {
     revealElements.forEach((element) => element.classList.add('is-visible'));
     return;
   }
@@ -37,11 +159,15 @@ onMounted(() => {
   revealElements.forEach((element) => revealObserver.observe(element));
 });
 
-onBeforeUnmount(() => revealObserver?.disconnect());
+onBeforeUnmount(() => {
+  revealObserver?.disconnect();
+  removeCursorListeners?.();
+});
 </script>
 
 <template>
   <div class="site-shell">
+    <span ref="cursorElement" class="inverted-cursor" aria-hidden="true"></span>
     <nav class="site-nav" aria-label="Navegação principal" data-reveal>
       <a class="brand" href="/" aria-label="quila.dev — página inicial">
         <span class="brand-mark" aria-hidden="true">q</span>
@@ -84,9 +210,67 @@ onBeforeUnmount(() => revealObserver?.disconnect());
         </div>
       </section>
 
+      <section class="experiments" aria-labelledby="experiments-title">
+        <div class="experiments-heading" data-reveal>
+          <p class="eyebrow"><span>02</span> experimentos</p>
+          <h2 id="experiments-title">Ideias em<br>movimento.</h2>
+          <p>
+            Um espaço para testar tecnologias, desmontar padrões e transformar curiosidade em experiências para a web.
+          </p>
+        </div>
+
+        <div class="experiment-browser" data-reveal>
+          <div class="experiment-tabs" role="tablist" aria-label="Selecionar experimento" @keydown="navigateTabs">
+            <button
+              v-for="(experiment, index) in experiments"
+              :id="`experiment-tab-${index}`"
+              :key="experiment.title"
+              type="button"
+              role="tab"
+              :aria-selected="activeExperimentIndex === index"
+              :aria-controls="`experiment-panel-${index}`"
+              :tabindex="activeExperimentIndex === index ? 0 : -1"
+              :style="{ '--tab-color': experiment.color }"
+              @click="selectExperiment(index)"
+            >
+              <span>{{ experiment.number }}</span>
+              {{ experiment.title }}
+            </button>
+          </div>
+
+          <Transition name="experiment-panel" mode="out-in">
+            <article
+              :id="`experiment-panel-${activeExperimentIndex}`"
+              :key="activeExperiment.title"
+              :class="['experiment-card', `pattern-${activeExperiment.pattern}`]"
+              :style="{ '--experiment-color': activeExperiment.color }"
+              role="tabpanel"
+              :aria-labelledby="`experiment-tab-${activeExperimentIndex}`"
+              tabindex="0"
+            >
+              <div class="experiment-meta">
+                <span>experimento {{ activeExperiment.number }}</span>
+                <span class="experiment-status"><i aria-hidden="true"></i> {{ activeExperiment.status }}</span>
+              </div>
+              <h3>{{ activeExperiment.title }}</h3>
+              <p>{{ activeExperiment.description }}</p>
+              <ul class="experiment-tags" :aria-label="`Tecnologias de ${activeExperiment.title}`">
+                <li v-for="tag in activeExperiment.tags" :key="tag">{{ tag }}</li>
+              </ul>
+              <div class="experiment-actions">
+                <a :href="activeExperiment.href" target="_blank" rel="noopener noreferrer">
+                  visitar <span aria-hidden="true">↗</span>
+                </a>
+                <a :href="activeExperiment.repository" target="_blank" rel="noopener noreferrer">ver código</a>
+              </div>
+            </article>
+          </Transition>
+        </div>
+      </section>
+
       <section id="contato" class="contact" aria-labelledby="contact-title">
         <div class="contact-heading" data-reveal>
-          <p class="eyebrow"><span>02</span> contato</p>
+          <p class="eyebrow"><span>03</span> contato</p>
           <h2 id="contact-title">Onde me<br>encontrar.</h2>
         </div>
 
@@ -112,7 +296,7 @@ onBeforeUnmount(() => revealObserver?.disconnect());
       </section>
     </main>
 
-    <footer class="site-footer" data-reveal>
+    <footer class="site-footer">
       <ul class="metadata" aria-label="Informações pessoais">
         <li><span>local</span><WordHighlight target="Maceió, BRA" reveal="Cidade natal do Quila" /></li>
         <li><span>nascimento</span><time datetime="1992-08-21">21 ago 1992</time></li>
