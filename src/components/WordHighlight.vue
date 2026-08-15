@@ -1,7 +1,7 @@
 <template>
   <mark
     tabindex="0"
-    class="bg-neutral-300 rounded-sm cursor-help transition-colors duration-200 hover:bg-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500"
+    class="word-highlight"
     :title="reveal"
   >
     <slot>
@@ -11,8 +11,6 @@
 </template>
 
 <script setup>
-import { defineProps } from 'vue';
-
 defineProps({
   target: {
     type: String,
@@ -24,3 +22,28 @@ defineProps({
   }
 });
 </script>
+
+<style scoped>
+.word-highlight {
+  border-radius: 3px;
+  padding: 0 0.08em;
+  color: inherit;
+  background: rgb(0 145 80 / 14%);
+  box-decoration-break: clone;
+  cursor: help;
+  transition: color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+  -webkit-box-decoration-break: clone;
+}
+
+.word-highlight:hover {
+  color: #ffffff;
+  background: #009150;
+}
+
+.word-highlight:focus-visible {
+  color: #ffffff;
+  background: #009150;
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(0 145 80 / 25%);
+}
+</style>
