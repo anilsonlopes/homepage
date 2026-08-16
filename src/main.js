@@ -3,7 +3,7 @@ import App from './App.vue'
 
 const app = createApp(App)
 
-if (import.meta.env.DEV) {
+if (import.meta.env.PROD) {
   const { createGtag } = await import('vue-gtag')
 
   app.use(createGtag({
