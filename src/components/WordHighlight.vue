@@ -68,10 +68,10 @@ defineProps({
   width: min(420px, calc(100vw - 32px));
   flex-direction: column;
   isolation: isolate;
-  border: 1px solid #24211d;
+  border: 1px solid var(--color-primary);
   border-radius: 4px;
-  color: #0a0a0a;
-  background: #ffffff;
+  color: var(--color-text);
+  background: var(--color-background);
   font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif;
   font-size: 16px;
   font-style: normal;
@@ -91,7 +91,7 @@ defineProps({
   position: absolute;
   z-index: -1;
   inset: 0;
-  border: 1px solid #24211d;
+  border: 1px solid var(--color-primary);
   border-radius: 4px;
   background: #009150;
   box-shadow: 0 16px 36px rgb(0 0 0 / 20%);
@@ -106,7 +106,7 @@ defineProps({
   left: 50%;
   width: 1px;
   height: 10px;
-  background: #24211d;
+  background: var(--color-primary);
   content: '';
   transform: translateX(-50%);
 }
@@ -119,15 +119,15 @@ defineProps({
   gap: 16px;
   padding: 0 11px;
   border-radius: 2px 2px 0 0;
-  color: #ffffff;
-  background: #24211d;
+  color: var(--color-on-primary);
+  background: var(--color-primary);
 }
 
 .tooltip-label {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #ffffff;
+  color: var(--color-on-primary);
   font-family: 'Martian Mono', ui-monospace, monospace;
   font-size: 9px;
   font-weight: 500;

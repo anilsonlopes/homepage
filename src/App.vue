@@ -83,6 +83,13 @@ const experiments = [
 const activeExperimentIndex = ref(0);
 const activeExperiment = computed(() => experiments[activeExperimentIndex.value]);
 const cursorElement = ref(null);
+const theme = ref('light');
+
+function toggleTheme() {
+  theme.value = theme.value === 'light' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = theme.value;
+  localStorage.setItem('quila-theme', theme.value);
+}
 
 function selectExperiment(index) {
   activeExperimentIndex.value = index;
@@ -108,8 +115,21 @@ function navigateTabs(event) {
 
 let revealObserver;
 let removeCursorListeners;
+let removeThemeListener;
 
 onMounted(() => {
+  theme.value = document.documentElement.dataset.theme || 'light';
+  const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
+  const handleSystemThemeChange = (event) => {
+    if (localStorage.getItem('quila-theme')) return;
+
+    theme.value = event.matches ? 'dark' : 'light';
+    document.documentElement.dataset.theme = theme.value;
+  };
+
+  systemTheme.addEventListener('change', handleSystemThemeChange);
+  removeThemeListener = () => systemTheme.removeEventListener('change', handleSystemThemeChange);
+
   const revealElements = document.querySelectorAll('[data-reveal]');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -162,6 +182,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   revealObserver?.disconnect();
   removeCursorListeners?.();
+  removeThemeListener?.();
 });
 </script>
 
@@ -174,10 +195,31 @@ onBeforeUnmount(() => {
         <span>quila.dev</span>
       </a>
 
-      <span class="availability">
-        <span class="availability-dot" aria-hidden="true"></span>
-        disponível para projetos
-      </span>
+      <div class="nav-actions">
+        <span class="availability">
+          <span class="availability-dot" aria-hidden="true"></span>
+          disponível para projetos
+        </span>
+        <button
+          class="theme-toggle"
+          type="button"
+          :aria-pressed="theme === 'dark'"
+          :aria-label="theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'"
+          @click="toggleTheme"
+        >
+          <span class="theme-toggle-track" aria-hidden="true">
+            <span class="theme-toggle-thumb">
+              <svg class="theme-icon theme-icon-sun" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="2.5" stroke="currentColor" />
+                <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.4 1.4M11.55 11.55l1.4 1.4M12.95 3.05l-1.4 1.4M4.45 11.55l-1.4 1.4" stroke="currentColor" stroke-linecap="round" />
+              </svg>
+              <svg class="theme-icon theme-icon-moon" viewBox="0 0 16 16" fill="none">
+                <path d="M13.5 10.3A5.7 5.7 0 0 1 5.7 2.5a5.7 5.7 0 1 0 7.8 7.8Z" stroke="currentColor" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </span>
+        </button>
+      </div>
     </nav>
 
     <main>
