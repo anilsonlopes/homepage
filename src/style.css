@@ -90,6 +90,21 @@ mark {
   .custom-cursor * {
     cursor: none !important;
   }
+
+  .custom-cursor .mural-note,
+  .custom-cursor .mural-note * {
+    cursor: grab !important;
+    user-select: none;
+  }
+
+  .custom-cursor .mural-note:active,
+  .custom-cursor .mural-note:active * {
+    cursor: grabbing !important;
+  }
+
+  .site-shell:has(.mural-note:hover) > .inverted-cursor {
+    opacity: 0;
+  }
 }
 
 .reveal-ready [data-reveal] {

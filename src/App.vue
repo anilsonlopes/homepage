@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import WordHighlight from './components/WordHighlight.vue';
+import { trackEvent } from '@/analytics.js';
 
 const socialLinks = [
   { name: 'Twitch', handle: '@quilamcz', href: 'https://www.twitch.tv/quilamcz' },
@@ -100,10 +101,31 @@ function toggleTheme() {
   theme.value = theme.value === 'light' ? 'dark' : 'light';
   document.documentElement.dataset.theme = theme.value;
   localStorage.setItem('quila-theme', theme.value);
+  trackEvent('theme_change', { theme: theme.value });
 }
 
-function selectExperiment(index) {
+function selectExperiment(index, interactionMethod = 'click') {
   activeExperimentIndex.value = index;
+  trackEvent('select_content', {
+    content_type: 'experiment',
+    content_id: experiments[index].title.toLowerCase().replaceAll(' ', '-'),
+    interaction_method: interactionMethod
+  });
+}
+
+function trackNavigation(destination) {
+  trackEvent('navigation_click', { destination });
+}
+
+function trackExperimentLink(destination) {
+  trackEvent('experiment_link_click', {
+    experiment_id: activeExperiment.value.title.toLowerCase().replaceAll(' ', '-'),
+    destination
+  });
+}
+
+function trackContact(channel) {
+  trackEvent('contact_click', { channel: channel.toLowerCase() });
 }
 
 function navigateTabs(event) {
@@ -112,15 +134,17 @@ function navigateTabs(event) {
 
   event.preventDefault();
 
-  if (event.key === 'Home') activeExperimentIndex.value = 0;
-  if (event.key === 'End') activeExperimentIndex.value = experiments.length - 1;
+  let nextIndex = activeExperimentIndex.value;
+  if (event.key === 'Home') nextIndex = 0;
+  if (event.key === 'End') nextIndex = experiments.length - 1;
   if (event.key === 'ArrowLeft') {
-    activeExperimentIndex.value = (activeExperimentIndex.value - 1 + experiments.length) % experiments.length;
+    nextIndex = (activeExperimentIndex.value - 1 + experiments.length) % experiments.length;
   }
   if (event.key === 'ArrowRight') {
-    activeExperimentIndex.value = (activeExperimentIndex.value + 1) % experiments.length;
+    nextIndex = (activeExperimentIndex.value + 1) % experiments.length;
   }
 
+  selectExperiment(nextIndex, 'keyboard');
   nextTick(() => document.getElementById(`experiment-tab-${activeExperimentIndex.value}`)?.focus());
 }
 
@@ -135,7 +159,8 @@ function startMuralDrag(event, note) {
     startX: event.clientX,
     startY: event.clientY,
     noteX: note.x,
-    noteY: note.y
+    noteY: note.y,
+    moved: false
   };
   event.currentTarget.setPointerCapture(event.pointerId);
 }
@@ -151,10 +176,15 @@ function moveMuralDrag(event, note) {
   const maxY = Math.max(2, 98 - (noteBounds.height / board.height) * 100);
   note.x = Math.min(maxX, Math.max(2, activeMuralDrag.noteX + deltaX));
   note.y = Math.min(maxY, Math.max(2, activeMuralDrag.noteY + deltaY));
+  activeMuralDrag.moved ||= Math.abs(event.clientX - activeMuralDrag.startX) > 4
+    || Math.abs(event.clientY - activeMuralDrag.startY) > 4;
 }
 
-function stopMuralDrag(event) {
+function stopMuralDrag(event, note) {
   if (activeMuralDrag?.pointerId !== event.pointerId) return;
+  if (activeMuralDrag.moved) {
+    trackEvent('mural_note_move', { note_id: note.id, interaction_method: 'pointer' });
+  }
   activeMuralDrag = undefined;
 }
 
@@ -175,6 +205,7 @@ function moveMuralNote(event, note) {
   const maxY = board ? Math.max(2, 98 - (noteBounds.height / board.height) * 100) : 78;
   note.x = Math.min(maxX, Math.max(2, note.x + movement[0]));
   note.y = Math.min(maxY, Math.max(2, note.y + movement[1]));
+  trackEvent('mural_note_move', { note_id: note.id, interaction_method: 'keyboard' });
 }
 
 let revealObserver;
@@ -309,7 +340,7 @@ onBeforeUnmount(() => {
             <WordHighlight reveal="Fiz piadinha mas a conversa é séria!"><em>Hehe</em></WordHighlight>.
           </p>
 
-          <a class="contact-link" href="#contato">
+          <a class="contact-link" href="#contato" @click="trackNavigation('contact')">
             vamos conversar
             <span aria-hidden="true">↓</span>
           </a>
@@ -337,7 +368,7 @@ onBeforeUnmount(() => {
               :aria-controls="`experiment-panel-${index}`"
               :tabindex="activeExperimentIndex === index ? 0 : -1"
               :style="{ '--tab-color': experiment.color }"
-              @click="selectExperiment(index)"
+              @click="selectExperiment(index, 'click')"
             >
               <span>{{ experiment.number }}</span>
               {{ experiment.title }}
@@ -364,10 +395,20 @@ onBeforeUnmount(() => {
                 <li v-for="tag in activeExperiment.tags" :key="tag">{{ tag }}</li>
               </ul>
               <div class="experiment-actions">
-                <a :href="activeExperiment.href" target="_blank" rel="noopener noreferrer">
+                <a
+                  :href="activeExperiment.href"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  @click="trackExperimentLink('project')"
+                >
                   visitar <span aria-hidden="true">↗</span>
                 </a>
-                <a :href="activeExperiment.repository" target="_blank" rel="noopener noreferrer">ver código</a>
+                <a
+                  :href="activeExperiment.repository"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  @click="trackExperimentLink('repository')"
+                >ver código</a>
               </div>
             </article>
           </Transition>
@@ -391,6 +432,7 @@ onBeforeUnmount(() => {
               :href="social.href"
               :target="social.href.startsWith('http') ? '_blank' : undefined"
               :rel="social.href.startsWith('http') ? 'noopener noreferrer' : undefined"
+              @click="trackContact(social.name)"
             >
               <span class="social-index">{{ String(index + 1).padStart(2, '0') }}</span>
               <span class="social-name">{{ social.name }}</span>
@@ -424,8 +466,8 @@ onBeforeUnmount(() => {
           :aria-label="`${note.label}: ${note.value}. Arraste ou use as setas para mover.`"
           @pointerdown="startMuralDrag($event, note)"
           @pointermove="moveMuralDrag($event, note)"
-          @pointerup="stopMuralDrag"
-          @pointercancel="stopMuralDrag"
+          @pointerup="stopMuralDrag($event, note)"
+          @pointercancel="stopMuralDrag($event, note)"
           @keydown="moveMuralNote($event, note)"
         >
           <span>{{ note.label }}</span>
