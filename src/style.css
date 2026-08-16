@@ -102,7 +102,19 @@ mark {
     cursor: grabbing !important;
   }
 
-  .site-shell:has(.mural-note:hover) > .inverted-cursor {
+  .custom-cursor a,
+  .custom-cursor a * {
+    cursor: pointer !important;
+  }
+
+  .custom-cursor .word-highlight,
+  .custom-cursor .word-highlight * {
+    cursor: help !important;
+  }
+
+  .site-shell:has(.mural-note:hover) > .inverted-cursor,
+  .site-shell:has(a:hover) > .inverted-cursor,
+  .site-shell:has(.word-highlight:hover) > .inverted-cursor {
     opacity: 0;
   }
 }

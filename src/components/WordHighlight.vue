@@ -1,28 +1,50 @@
 <template>
   <mark
+    ref="triggerElement"
     tabindex="0"
     class="word-highlight"
     :aria-describedby="reveal ? tooltipId : undefined"
+    @mouseenter="showTooltip"
+    @mouseleave="hideTooltip"
+    @focusin="showTooltip"
+    @focusout="hideTooltip"
+    @keydown.esc="hideTooltip"
   >
     <slot>
       {{ target }}
     </slot>
-    <span v-if="reveal" :id="tooltipId" class="word-tooltip" role="tooltip">
+  </mark>
+
+  <Teleport to="body">
+    <span
+      v-if="reveal"
+      :id="tooltipId"
+      ref="tooltipElement"
+      :class="['word-tooltip', { 'is-open': isOpen }]"
+      :data-placement="placement"
+      role="tooltip"
+    >
       <span class="tooltip-chrome">
         <span class="tooltip-label"><i aria-hidden="true"></i> quila.dev / contexto</span>
         <span class="tooltip-controls" aria-hidden="true"><i></i><i></i><i></i></span>
       </span>
       <span class="tooltip-copy">{{ reveal }}</span>
     </span>
-  </mark>
+  </Teleport>
 </template>
 
 <script setup>
-import { useId } from 'vue';
+import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/dom';
+import { nextTick, onBeforeUnmount, ref, useId } from 'vue';
 
 const tooltipId = useId();
+const triggerElement = ref(null);
+const tooltipElement = ref(null);
+const isOpen = ref(false);
+const placement = ref('top');
+let stopAutoUpdate;
 
-defineProps({
+const props = defineProps({
   target: {
     type: String,
     default: ''
@@ -32,6 +54,43 @@ defineProps({
     default: ''
   }
 });
+
+async function updatePosition() {
+  if (!triggerElement.value || !tooltipElement.value) return;
+
+  const position = await computePosition(triggerElement.value, tooltipElement.value, {
+    placement: 'top',
+    strategy: 'fixed',
+    middleware: [
+      offset(12),
+      flip({ padding: 16 }),
+      shift({ padding: 16 })
+    ]
+  });
+
+  placement.value = position.placement;
+  Object.assign(tooltipElement.value.style, {
+    left: `${position.x}px`,
+    top: `${position.y}px`
+  });
+}
+
+async function showTooltip() {
+  if (!props.reveal || isOpen.value) return;
+
+  isOpen.value = true;
+  await nextTick();
+  stopAutoUpdate?.();
+  stopAutoUpdate = autoUpdate(triggerElement.value, tooltipElement.value, updatePosition);
+}
+
+function hideTooltip() {
+  isOpen.value = false;
+  stopAutoUpdate?.();
+  stopAutoUpdate = undefined;
+}
+
+onBeforeUnmount(() => stopAutoUpdate?.());
 </script>
 
 <style scoped>
@@ -60,10 +119,10 @@ defineProps({
 }
 
 .word-tooltip {
-  position: absolute;
-  z-index: 20;
-  bottom: calc(100% + 10px);
-  left: 50%;
+  position: fixed;
+  z-index: 9998;
+  top: 0;
+  left: 0;
   display: flex;
   width: min(420px, calc(100vw - 32px));
   flex-direction: column;
@@ -82,7 +141,7 @@ defineProps({
   pointer-events: none;
   text-align: left;
   text-transform: none;
-  transform: translate(-47%, 10px) rotate(1deg);
+  transform: translateY(var(--tooltip-entry-y, 10px)) rotate(1deg);
   transform-origin: bottom center;
   transition: opacity 150ms ease, transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -109,6 +168,15 @@ defineProps({
   background: var(--color-primary);
   content: '';
   transform: translateX(-50%);
+}
+
+.word-tooltip[data-placement^='bottom'] {
+  --tooltip-entry-y: -10px;
+}
+
+.word-tooltip[data-placement^='bottom']::after {
+  top: auto;
+  bottom: 100%;
 }
 
 .tooltip-chrome {
@@ -160,14 +228,12 @@ defineProps({
   padding: 18px 20px 20px;
 }
 
-.word-highlight:hover .word-tooltip,
-.word-highlight:focus .word-tooltip {
+.word-tooltip.is-open {
   opacity: 1;
-  transform: translate(-50%, 0) rotate(0);
+  transform: translateY(0) rotate(0);
 }
 
-.word-highlight:hover .word-tooltip::before,
-.word-highlight:focus .word-tooltip::before {
+.word-tooltip.is-open::before {
   animation: tooltip-frame-settle 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -190,8 +256,7 @@ defineProps({
     transition-duration: 0.01ms;
   }
 
-  .word-highlight:hover .word-tooltip::before,
-  .word-highlight:focus .word-tooltip::before {
+  .word-tooltip.is-open::before {
     animation: none;
   }
 }
