@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import WordHighlight from './components/WordHighlight.vue';
 
 const socialLinks = [
@@ -10,6 +10,14 @@ const socialLinks = [
   { name: 'Discord', handle: 'Servidor de quila', href: 'https://discord.gg/t2qcYDnKGd' },
   { name: 'E-mail', handle: 'nissobmx@gmail.com', href: 'mailto:nissobmx@gmail.com' }
 ];
+
+const muralNotes = reactive([
+  { id: 'local', label: 'local', value: 'Maceió, BRA', x: 8, y: 13, rotation: -4, color: '#f2c94c', z: 1 },
+  { id: 'tempo', label: 'trajetória', value: '16 anos com código', x: 55, y: 10, rotation: 3, color: '#62d49c', z: 2 },
+  { id: 'nascimento', label: 'desde', value: '21 ago 1992', x: 18, y: 58, rotation: 2, color: '#8db8ff', z: 3 },
+  { id: 'stack', label: 'ferramentas', value: 'Vue · Nuxt · Bun', x: 54, y: 56, rotation: -3, color: '#d5a6ff', z: 4 },
+  { id: 'contato', label: 'contato', value: 'nissobmx@gmail.com', x: 35, y: 34, rotation: -1, color: '#ff927d', z: 5 }
+]);
 
 const experiments = [
   {
@@ -83,7 +91,10 @@ const experiments = [
 const activeExperimentIndex = ref(0);
 const activeExperiment = computed(() => experiments[activeExperimentIndex.value]);
 const cursorElement = ref(null);
+const muralBoard = ref(null);
 const theme = ref('light');
+let activeMuralDrag;
+let muralZIndex = muralNotes.length;
 
 function toggleTheme() {
   theme.value = theme.value === 'light' ? 'dark' : 'light';
@@ -111,6 +122,59 @@ function navigateTabs(event) {
   }
 
   nextTick(() => document.getElementById(`experiment-tab-${activeExperimentIndex.value}`)?.focus());
+}
+
+function startMuralDrag(event, note) {
+  if (!event.isPrimary || !muralBoard.value) return;
+
+  muralZIndex += 1;
+  note.z = muralZIndex;
+  activeMuralDrag = {
+    id: note.id,
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    noteX: note.x,
+    noteY: note.y
+  };
+  event.currentTarget.setPointerCapture(event.pointerId);
+}
+
+function moveMuralDrag(event, note) {
+  if (activeMuralDrag?.id !== note.id || activeMuralDrag.pointerId !== event.pointerId || !muralBoard.value) return;
+
+  const board = muralBoard.value.getBoundingClientRect();
+  const noteBounds = event.currentTarget.getBoundingClientRect();
+  const deltaX = ((event.clientX - activeMuralDrag.startX) / board.width) * 100;
+  const deltaY = ((event.clientY - activeMuralDrag.startY) / board.height) * 100;
+  const maxX = Math.max(2, 98 - (noteBounds.width / board.width) * 100);
+  const maxY = Math.max(2, 98 - (noteBounds.height / board.height) * 100);
+  note.x = Math.min(maxX, Math.max(2, activeMuralDrag.noteX + deltaX));
+  note.y = Math.min(maxY, Math.max(2, activeMuralDrag.noteY + deltaY));
+}
+
+function stopMuralDrag(event) {
+  if (activeMuralDrag?.pointerId !== event.pointerId) return;
+  activeMuralDrag = undefined;
+}
+
+function moveMuralNote(event, note) {
+  const directions = {
+    ArrowLeft: [-2, 0],
+    ArrowRight: [2, 0],
+    ArrowUp: [0, -2],
+    ArrowDown: [0, 2]
+  };
+  const movement = directions[event.key];
+  if (!movement) return;
+
+  event.preventDefault();
+  const board = muralBoard.value?.getBoundingClientRect();
+  const noteBounds = event.currentTarget.getBoundingClientRect();
+  const maxX = board ? Math.max(2, 98 - (noteBounds.width / board.width) * 100) : 82;
+  const maxY = board ? Math.max(2, 98 - (noteBounds.height / board.height) * 100) : 78;
+  note.x = Math.min(maxX, Math.max(2, note.x + movement[0]));
+  note.y = Math.min(maxY, Math.max(2, note.y + movement[1]));
 }
 
 let revealObserver;
@@ -339,12 +403,41 @@ onBeforeUnmount(() => {
     </main>
 
     <footer class="site-footer">
-      <ul class="metadata" aria-label="Informações pessoais">
-        <li><span>local</span><WordHighlight target="Maceió, BRA" reveal="Cidade natal do Quila" /></li>
-        <li><span>nascimento</span><time datetime="1992-08-21">21 ago 1992</time></li>
-        <li><span>contato</span><a href="mailto:nissobmx@gmail.com">nissobmx@gmail.com</a></li>
-      </ul>
-      <p class="copyright">© {{ new Date().getFullYear() }} quila.dev</p>
+      <div class="footer-panel-bar">
+        <span><i aria-hidden="true"></i> 04 / mural</span>
+        <span>arraste os cartões para reorganizar</span>
+      </div>
+
+      <div ref="muralBoard" class="footer-mural" aria-label="Mural interativo sobre Quila">
+        <button
+          v-for="note in muralNotes"
+          :key="note.id"
+          class="mural-note"
+          type="button"
+          :style="{
+            '--note-x': `${note.x}%`,
+            '--note-y': `${note.y}%`,
+            '--note-rotation': `${note.rotation}deg`,
+            '--note-color': note.color,
+            '--note-z': note.z
+          }"
+          :aria-label="`${note.label}: ${note.value}. Arraste ou use as setas para mover.`"
+          @pointerdown="startMuralDrag($event, note)"
+          @pointermove="moveMuralDrag($event, note)"
+          @pointerup="stopMuralDrag"
+          @pointercancel="stopMuralDrag"
+          @keydown="moveMuralNote($event, note)"
+        >
+          <span>{{ note.label }}</span>
+          <strong>{{ note.value }}</strong>
+          <i aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div class="footer-bottom">
+        <p class="footer-signature">feito em Maceió para a web.</p>
+        <p class="copyright">© {{ new Date().getFullYear() }} quila.dev</p>
+      </div>
     </footer>
   </div>
 </template>
