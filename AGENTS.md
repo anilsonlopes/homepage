@@ -6,7 +6,7 @@ This is a Vue 3 single-page site built with Vite and Tailwind CSS. Application c
 
 ## Build, Test, and Development Commands
 
-Use Bun, matching the checked-in `bun.lock` and README examples. Node.js must be `^20.19.0` or `>=22.12.0`.
+Use Bun, matching the checked-in `bun.lock` and README examples. Node.js must be `^24.0.0` and Bun must be `>=1.3.0`.
 
 - `bun install` installs dependencies.
 - `bun dev` starts Vite with hot module replacement.

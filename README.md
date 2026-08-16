@@ -21,6 +21,8 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 
 ## Project Setup
 
+Requirements: Node.js 24 and Bun 1.3 or newer.
+
 ```sh
 bun install
 ```
