@@ -41,6 +41,11 @@ html {
   scroll-behavior: smooth;
 }
 
+html:has(.soundcloud-player.is-maximized),
+body:has(.soundcloud-player.is-maximized) {
+  overflow: hidden;
+}
+
 body {
   min-width: 320px;
   min-height: 100vh;
@@ -112,9 +117,36 @@ mark {
     cursor: help !important;
   }
 
+  .custom-cursor .soundcloud-player .player-bar,
+  .custom-cursor .soundcloud-player .player-bar * {
+    cursor: grab !important;
+  }
+
+  .custom-cursor .soundcloud-player .player-bar:active,
+  .custom-cursor .soundcloud-player .player-bar:active * {
+    cursor: grabbing !important;
+  }
+
+  .custom-cursor .soundcloud-player .window-controls button,
+  .custom-cursor .soundcloud-player .window-controls button *,
+  .custom-cursor .soundcloud-player .player-launcher,
+  .custom-cursor .soundcloud-player .player-launcher * {
+    cursor: pointer !important;
+  }
+
+  .custom-cursor .soundcloud-player .window-controls button:disabled {
+    cursor: not-allowed !important;
+  }
+
+  .custom-cursor .soundcloud-player .volume-control input {
+    cursor: pointer !important;
+  }
+
   .site-shell:has(.mural-note:hover) > .inverted-cursor,
   .site-shell:has(a:hover) > .inverted-cursor,
-  .site-shell:has(.word-highlight:hover) > .inverted-cursor {
+  .site-shell:has(.word-highlight:hover) > .inverted-cursor,
+  .site-shell:has(.soundcloud-player .player-bar:hover) > .inverted-cursor,
+  .site-shell:has(.soundcloud-player .volume-control:hover) > .inverted-cursor {
     opacity: 0;
   }
 }

@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import SoundCloudPlayer from './components/SoundCloudPlayer.vue';
 import WordHighlight from './components/WordHighlight.vue';
 import { trackEvent } from '@/analytics.js';
 
@@ -8,6 +9,7 @@ const socialLinks = [
   { name: 'YouTube', handle: '@quilamcz', href: 'https://www.youtube.com/@quilamcz' },
   { name: 'Instagram', handle: '@quilamcz', href: 'https://www.instagram.com/quilamcz/' },
   { name: 'TikTok', handle: '@nissobmx', href: 'https://www.tiktok.com/@quilamcz' },
+  { name: 'SoundCloud', handle: '@quilamcz', href: 'https://soundcloud.com/quilamcz' },
   { name: 'Discord', handle: 'Servidor de quila', href: 'https://discord.gg/t2qcYDnKGd' },
   { name: 'E-mail', handle: 'nissobmx@gmail.com', href: 'mailto:nissobmx@gmail.com' }
 ];
@@ -284,6 +286,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="site-shell">
     <span ref="cursorElement" class="inverted-cursor" aria-hidden="true"></span>
+    <SoundCloudPlayer />
     <nav class="site-nav" aria-label="Navegação principal" data-reveal>
       <a class="brand" href="/" aria-label="quila.dev — página inicial">
         <span class="brand-mark" aria-hidden="true">q</span>
